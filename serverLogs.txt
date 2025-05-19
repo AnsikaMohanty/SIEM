@@ -1,0 +1,5 @@
+172.20.31.50 - - [23/Oct/2024:14:33:56 +0530] "GET / HTTP/1.1" 302 - "-" "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+172.20.31.50 - - [23/Oct/2024:14:33:56 +0530] "GET /dashboard/javascripts/all.js HTTP/1.1" 200 188385 "http://10.44.0.115:8080/dashboard/" "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+172.20.31.50 - - [23/Oct/2024:14:34:00 +0530] "GET /xdt/ HTTP/1.1" 302 - "-" "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+172.20.31.50 - - [23/Oct/2024:14:34:00 +0530] "GET /xdt/logout.php HTTP/1.1" 302 - "-" "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+172.20.31.50 - - [23/Oct/2024:14:34:00 +0530] "GET /xdt/login_rdx.php HTTP/1.1" 200 3106 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
