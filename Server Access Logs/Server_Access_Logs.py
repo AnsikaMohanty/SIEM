@@ -22,7 +22,7 @@ def group_log_data(log_entry):
 
 def process_log_file(log_file_path):
     if not os.path.isfile(log_file_path):
-        print(f"❌ File does not exist: {log_file_path}")
+        print(f"File does not exist: {log_file_path}")
         return pd.DataFrame()
 
     _, ext = os.path.splitext(log_file_path)
@@ -43,7 +43,7 @@ def process_log_file(log_file_path):
                 log_entries = file.readlines()
 
     except Exception as e:
-        print(f"⚠️ Error reading the file: {e}")
+        print(f"Error reading the file: {e}")
         return pd.DataFrame()
 
     # Extract valid log lines
@@ -54,7 +54,7 @@ def process_log_file(log_file_path):
             processed_data.append(result)
 
     if not processed_data:
-        print("⚠️ No valid log entries matched the expected format.")
+        print("No valid log entries matched the expected format.")
     return pd.DataFrame(processed_data, columns=['IP', 'Date', 'Method'])
 
 def create_database_and_table():
@@ -66,7 +66,7 @@ def create_database_and_table():
         )
         cursor = conn.cursor()
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DATABASE}")
-        print(f"✅ Database '{MYSQL_DATABASE}' checked/created successfully.")
+        print(f"Database '{MYSQL_DATABASE}' checked/created successfully.")
 
         conn.database = MYSQL_DATABASE
         cursor.execute("""
@@ -77,10 +77,10 @@ def create_database_and_table():
                 method VARCHAR(10)
             )
         """)
-        print("✅ Table 'server_access_logs' checked/created successfully.")
+        print("Table 'server_access_logs' checked/created successfully.")
         conn.commit()
     except Error as e:
-        print("❌ Error while setting up database or table:", e)
+        print("Error while setting up database or table:", e)
     finally:
         if conn.is_connected():
             cursor.close()
@@ -95,7 +95,7 @@ def insert_data_into_db(df):
             password=MYSQL_PASSWORD
         )
         if conn.is_connected():
-            print("✅ Connected to MySQL database for data insertion.")
+            print("Connected to MySQL database for data insertion.")
             cursor = conn.cursor()
             for _, row in df.iterrows():
                 cursor.execute('''
@@ -103,9 +103,9 @@ def insert_data_into_db(df):
                     VALUES (%s, %s, %s)
                 ''', (row['IP'], row['Date'], row['Method']))
             conn.commit()
-            print("✅ Data inserted successfully.")
+            print("Data inserted successfully.")
     except Error as e:
-        print("❌ Error inserting data into MySQL:", e)
+        print("Error inserting data into MySQL:", e)
     finally:
         if conn.is_connected():
             cursor.close()
@@ -127,17 +127,17 @@ def select_file_dialog():
     return unicodedata.normalize("NFKD", file_path.strip())
 
 def main():
-    print("📂 Please choose a log file...")
+    print("Please choose a log file...")
     log_file_path = select_file_dialog()
 
     if not log_file_path:
-        print("❌ No file selected. Exiting.")
+        print("No file selected. Exiting.")
         return
 
     create_database_and_table()
     grouped_data = process_log_file(log_file_path)
     if grouped_data.empty:
-        print("❌ No valid log entries found.")
+        print("No valid log entries found.")
     else:
         insert_data_into_db(grouped_data)
 
