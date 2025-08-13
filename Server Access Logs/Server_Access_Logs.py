@@ -4,7 +4,6 @@ import pandas as pd
 import mysql.connector
 from mysql.connector import Error
 import unicodedata
-from tkinter import Tk, filedialog
 
 # 🔧 MySQL Credentials
 MYSQL_HOST = 'localhost'
@@ -12,11 +11,28 @@ MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'rootroot'
 MYSQL_DATABASE = 'siem'
 
+# 📌 Apache Combined Log Format with STRICT IP Regex
+log_pattern = re.compile(
+    r'(?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.'
+    r'(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.'
+    r'(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.'
+    r'(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})) - - '
+    r'\[(?P<timestamp>[^\]]+)\] '
+    r'"(?P<method>GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|TRACE|CONNECT) (?P<url>\S+) (?P<protocol>[^"]+)" '
+    r'(?P<status>\d{3}) (?P<size>\d+|-) '
+    r'"(?P<referer>[^"]*)" '
+    r'"(?P<user_agent>[^"]*)"'
+)
+
 def group_log_data(log_entry):
-    log_pattern = r'\b(?P<ip>(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2}))\b - - \[(?P<date>\d{1,2}\/([A-Za-z]{3})\/(\d{4}):.*?)\] "(?P<method>GET|POST)\s'
-    match = re.match(log_pattern, log_entry)
+    match = log_pattern.match(log_entry)
     if match:
-        return (match.group('ip'), match.group('date'), match.group('method'))
+        data = match.groupdict()
+        data['size'] = int(data['size']) if data['size'].isdigit() else 0
+        return (
+            data['ip'], data['timestamp'], data['method'], data['url'],
+            data['status'], data['size'], data['referer'], data['user_agent']
+        )
     else:
         return None
 
@@ -33,20 +49,16 @@ def process_log_file(log_file_path):
         if ext == '.csv':
             df = pd.read_csv(log_file_path, header=None)
             log_entries = df.iloc[:, 0].astype(str).tolist()
-
         elif ext in ['.xls', '.xlsx']:
             df = pd.read_excel(log_file_path, header=None)
             log_entries = df.iloc[:, 0].astype(str).tolist()
-
         else:
             with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as file:
                 log_entries = file.readlines()
-
     except Exception as e:
         print(f"Error reading the file: {e}")
         return pd.DataFrame()
 
-    # Extract valid log lines
     processed_data = []
     for entry in log_entries:
         result = group_log_data(entry.strip())
@@ -55,7 +67,11 @@ def process_log_file(log_file_path):
 
     if not processed_data:
         print("No valid log entries matched the expected format.")
-    return pd.DataFrame(processed_data, columns=['IP', 'Date', 'Method'])
+        return pd.DataFrame()
+
+    return pd.DataFrame(processed_data, columns=[
+        'IP', 'LogTimestamp', 'Method', 'URL', 'Status', 'Size', 'Referer', 'UserAgent'
+    ])
 
 def create_database_and_table():
     try:
@@ -73,8 +89,13 @@ def create_database_and_table():
             CREATE TABLE IF NOT EXISTS server_access_logs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 ip VARCHAR(45),
-                date VARCHAR(100),
-                method VARCHAR(10)
+                log_timestamp VARCHAR(100),
+                method VARCHAR(10),
+                url TEXT,
+                status INT,
+                size INT,
+                referer TEXT,
+                user_agent TEXT
             )
         """)
         print("Table 'server_access_logs' checked/created successfully.")
@@ -99,9 +120,13 @@ def insert_data_into_db(df):
             cursor = conn.cursor()
             for _, row in df.iterrows():
                 cursor.execute('''
-                    INSERT INTO server_access_logs (ip, date, method)
-                    VALUES (%s, %s, %s)
-                ''', (row['IP'], row['Date'], row['Method']))
+                    INSERT INTO server_access_logs
+                    (ip, log_timestamp, method, url, status, size, referer, user_agent)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    row['IP'], row['LogTimestamp'], row['Method'], row['URL'],
+                    int(row['Status']), int(row['Size']), row['Referer'], row['UserAgent']
+                ))
             conn.commit()
             print("Data inserted successfully.")
     except Error as e:
@@ -111,27 +136,12 @@ def insert_data_into_db(df):
             cursor.close()
             conn.close()
 
-def select_file_dialog():
-    Tk().withdraw()  # Hide the GUI root
-    file_path = filedialog.askopenfilename(
-        title="Select a Log File",
-        filetypes=[
-            ("All supported files", "*.txt *.csv *.log *.xls *.xlsx"),
-            ("Text files", "*.txt"),
-            ("CSV files", "*.csv"),
-            ("Excel files", "*.xls *.xlsx"),
-            ("Log files", "*.log"),
-            ("All files", "*.*")
-        ]
-    )
-    return unicodedata.normalize("NFKD", file_path.strip())
-
 def main():
-    print("Please choose a log file...")
-    log_file_path = select_file_dialog()
+    # Direct path to Logs.txt in the same folder as this script
+    log_file_path = os.path.join(os.path.dirname(__file__), "Logs.txt")
 
-    if not log_file_path:
-        print("No file selected. Exiting.")
+    if not os.path.exists(log_file_path):
+        print(f"Log file not found at: {log_file_path}")
         return
 
     create_database_and_table()
