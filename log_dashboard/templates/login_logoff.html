@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login/Logoff Logs - Log Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        h2 {
+            font-size: 2.0rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+        }
+
+        .dashboard-container {
+            padding: 2rem;
+        }
+
+        .section-header {
+            background: linear-gradient(90deg, #e73c7e, #ee7752);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+        }
+
+        .stats-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 300px;
+        }
+
+        .badge-logon {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .badge-logoff {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h2 class="text-center">Login/Logoff Log Dashboard</h2>
+
+        <div class="row">
+            <!-- Summary Statistics -->
+            <div class="col-md-12 mb-4">
+                <div class="section-header">Activity Summary</div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stats-card text-center">
+                                    <h3>{{ stats.total_events }}</h3>
+                                    <p class="text-muted mb-0">Total Events</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card text-center">
+                                    <h3>{{ stats.unique_users }}</h3>
+                                    <p class="text-muted mb-0">Unique Users</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card text-center">
+                                    <h3>{{ stats.unique_hosts }}</h3>
+                                    <p class="text-muted mb-0">Unique Hosts</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card text-center">
+                                    <h3>{{ stats.last_check }}</h3>
+                                    <p class="text-muted mb-0">Last Check</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Timeline -->
+            <div class="col-md-12">
+                <div class="section-header">Event Timeline</div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="eventChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Events Table -->
+            <div class="col-md-12">
+                <div class="section-header">Detailed Events</div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="eventsTable" class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Username</th>
+                                        <th>Hostname</th>
+                                        <th>IP Address</th>
+                                        <th>Event Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in stats.events %}
+                                    <tr>
+                                        <td>{{ event.timestamp }}</td>
+                                        <td>{{ event.username }}</td>
+                                        <td>{{ event.hostname }}</td>
+                                        <td>{{ event.ip_address }}</td>
+                                        <td>
+                                            <span class="badge {% if event.status == 'Logon' %}badge-logon{% else %}badge-logoff{% endif %}">
+                                                {{ event.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize DataTable
+        $(document).ready(function() {
+            $('#eventsTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]]
+            });
+        });
+
+        // Initialize Chart
+        const ctx = document.getElementById('eventChart').getContext('2d');
+
+        // Parse the data from Flask
+        const timelineLabels = JSON.parse('{{ stats.timeline_labels | tojson | safe }}');
+        const logonData = JSON.parse('{{ stats.logon_timeline | tojson | safe }}');
+        const logoffData = JSON.parse('{{ stats.logoff_timeline | tojson | safe }}');
+
+        // Chart configuration
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: timelineLabels,
+                datasets: [
+                    {
+                        label: 'Logon Events',
+                        data: logonData,
+                        borderColor: '#28a745',
+                        tension: 0.4,
+                        fill: false
+                    },
+                    {
+                        label: 'Logoff Events',
+                        data: logoffData,
+                        borderColor: '#dc3545',
+                        tension: 0.4,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, chartConfig);
+    </script>
+</body>
+</html>
