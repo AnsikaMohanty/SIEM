@@ -1,0 +1,26 @@
+
+==== Logistic Regression ====
+Accuracy: 0.3240
+              precision    recall  f1-score   support
+
+   connected       0.33      0.45      0.39       700
+disconnected       0.29      0.02      0.04       646
+      failed       0.32      0.48      0.38       654
+
+    accuracy                           0.32      2000
+   macro avg       0.31      0.32      0.27      2000
+weighted avg       0.31      0.32      0.27      2000
+
+
+==== Random Forest ====
+Accuracy: 0.3320
+              precision    recall  f1-score   support
+
+   connected       0.37      0.37      0.37       700
+disconnected       0.32      0.31      0.32       646
+      failed       0.30      0.31      0.31       654
+
+    accuracy                           0.33      2000
+   macro avg       0.33      0.33      0.33      2000
+weighted avg       0.33      0.33      0.33      2000
+

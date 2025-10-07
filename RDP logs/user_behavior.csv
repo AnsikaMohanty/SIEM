@@ -1,0 +1,11 @@
+username,total_sessions,unique_ips,most_common_hour
+admin,1007,698,19
+alice,1003,700,3
+bob,994,690,4
+guest,989,695,1
+john,1040,716,6
+rdp_user,943,656,15
+remote,1028,711,13
+root,962,669,18
+test,1037,712,3
+user1,997,681,[ 0 16]
