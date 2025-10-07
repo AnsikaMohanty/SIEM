@@ -3,7 +3,6 @@ import mysql.connector
 from mysql.connector import Error
 import os
 
-# 🔧 MySQL Credentials
 MYSQL_HOST = 'localhost'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'rootroot'
@@ -19,14 +18,11 @@ def create_database_and_table():
         )
         cursor = conn.cursor()
 
-        # Create database if not exists
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DATABASE}")
         print(f"✅ Database '{MYSQL_DATABASE}' ready.")
 
-        # Switch to database
         conn.database = MYSQL_DATABASE
 
-        # Create table if not exists
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,14 +43,14 @@ def create_database_and_table():
             conn.close()
 
 def insert_csv_to_db(csv_path):
+    conn = None
     try:
-        # Read CSV
-        df = pd.read_csv(csv_path)
+        if not os.path.isfile(csv_path):
+            raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
-        # Clean column names
+        df = pd.read_csv(csv_path)
         df.columns = df.columns.str.strip()
 
-        # Connect to DB
         conn = mysql.connector.connect(
             host=MYSQL_HOST,
             database=MYSQL_DATABASE,
@@ -63,7 +59,6 @@ def insert_csv_to_db(csv_path):
         )
         cursor = conn.cursor()
 
-        # Insert rows
         for _, row in df.iterrows():
             cursor.execute(f"""
                 INSERT INTO {TABLE_NAME} 
@@ -79,16 +74,16 @@ def insert_csv_to_db(csv_path):
         conn.commit()
         print(f"✅ Inserted {len(df)} rows into '{TABLE_NAME}'.")
 
-    except Error as e:
+    except FileNotFoundError as fnf:
+        print("❌ CSV file not found:", fnf)
+    except Exception as e:
         print("❌ Data insertion error:", e)
     finally:
-        if conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
 
 if __name__ == "__main__":
-    # Change this to your CSV file path
-    csv_file_path = os.path.abspath("loginlogoffff.csv")
-
+    csv_file_path = r"C:\Users\MY PC\Desktop\SIEM\SIEM\Login Logs\loginlogoffff.csv"
     create_database_and_table()
     insert_csv_to_db(csv_file_path)

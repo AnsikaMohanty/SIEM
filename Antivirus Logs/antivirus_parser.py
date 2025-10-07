@@ -76,7 +76,7 @@ def insert_csv_to_db(csv_path):
                 (log_id, timestamp, file_path, malware_type, severity, scan_type, os, detection_method)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                str(row['log_id']),
+                str(row['og_id']),
                 str(row['timestamp']),
                 str(row['file_path']),
                 str(row['malware_type']),
@@ -97,7 +97,7 @@ def insert_csv_to_db(csv_path):
             conn.close()
 
 if __name__ == "__main__":
-    csv_file_path = os.path.abspath("antivirus_logs.csv")
-
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_file_path = os.path.join(script_dir, "antivirus_logs.csv") 
     create_database_and_table()
     insert_csv_to_db(csv_file_path)

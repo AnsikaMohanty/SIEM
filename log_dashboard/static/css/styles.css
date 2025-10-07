@@ -1,0 +1,69 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar {
+    background-color: #212529;
+}
+
+.landing-bg {
+    background: linear-gradient(135deg, #f0f4ff, #e9f5ff);
+    min-height: 100vh;
+    padding-top: 20px;
+}
+
+header {
+    background-color: #343a40;
+    color: white;
+    padding: 15px;
+    text-align: center;
+}
+
+.card-summary {
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-summary:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.card-antivirus {
+    background: linear-gradient(135deg, #ff9a8b, #ffd1c1);
+}
+
+.card-login {
+    background: linear-gradient(135deg, #a8edea, #fed6e3);
+}
+
+.card-access {
+    background: linear-gradient(135deg, #cfd9df, #e2ebf0);
+}
+
+.card-winlog {
+    background: linear-gradient(135deg, #fdfbfb, #ebedee);
+}
+
+.card-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+.card-summary p.counter {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+

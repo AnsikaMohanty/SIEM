@@ -2,203 +2,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Server Log Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIEM Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body {
-            background: white;
-            font-family: 'Poppins', sans-serif;
-            color: #2c3e50;
-        }
-
-        h2 {
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            font-size: 2.5rem;
-        }
-
-        .glass-card {
-            background: #f8f9fa;
-            border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-number {
-            font-size: 2.25rem;
-            font-weight: 600;
-        }
-
-        .badge {
-            font-size: 1rem;
-            padding: 0.6em 0.9em;
-        }
-
-        .list-group-item {
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        canvas {
-            height: 250px !important;
-        }
-
-        .section-header {
-            background: linear-gradient(90deg, #20c997, #17a2b8);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 15px;
-            font-weight: 700;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .mini-section-header {
-            background: linear-gradient(90deg, #20c997, #17a2b8);
-            color: white;
-            padding: 0.6rem;
-            border-radius: 10px;
-            font-size: 1.25rem;
-            text-align: center;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
+        .card-summary { cursor: pointer; transition: transform 0.2s ease; }
+        .card-summary:hover { transform: scale(1.03); box-shadow: 0px 4px 20px rgba(0,0,0,0.2); }
+        .icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .counter { font-size: 1.8rem; font-weight: bold; color: #333; }
     </style>
 </head>
 <body>
-    <div class="container my-5">
-        <h2 class="text-center">Server Access Log Dashboard</h2>
 
-        <!-- Stats Section -->
-        <div class="section-header">Request Statistics</div>
-        <div class="row text-center mb-4">
-            <div class="col-md-4 mb-3">
-                <div class="glass-card">
-                    <h5>Total Requests</h5>
-                    <div class="stat-number text-primary">{{ stats.total }}</div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <div class="glass-card">
-                    <h5>GET Requests</h5>
-                    <div class="stat-number text-success">{{ stats.method_counts.get('GET', 0) }}</div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <div class="glass-card">
-                    <h5>POST Requests</h5>
-                    <div class="stat-number text-danger">{{ stats.method_counts.get('POST', 0) }}</div>
-                </div>
-            </div>
-        </div>
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+    <div class="container">
+        <a class="navbar-brand" href="#">SIEM Dashboard</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</nav>
 
-        <!-- Top IPs -->
-        <div class="section-header">Top IP Addresses</div>
-        <ul class="list-group mb-5">
-            {% for ip, count in stats.ip_counts.items() %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>{{ ip }}</span>
-                <span class="badge bg-dark rounded-pill">{{ count }}</span>
-            </li>
-            {% endfor %}
-        </ul>
+<!-- MAIN CONTENT -->
+<div class="landing-bg">
+    <div class="container my-5 p-4 rounded shadow">
+        <h1 class="text-center mb-4">Security Information and Event Management</h1>
 
-        <!-- Charts Section -->
-        <div class="section-header">Request Trends</div>
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="glass-card">
-                    <div class="mini-section-header">Daily Requests</div>
-                    <canvas id="dailyChart"></canvas>
+        <div class="row g-4">
+            <!-- Antivirus Logs -->
+            <div class="col-md-3">
+                <div class="card card-summary card-antivirus" onclick="location.href='/logs/antivirus_logs'"
+                     data-bs-toggle="tooltip" data-bs-placement="top" title="Shows detected malware details and severity.">
+                    <div class="card-body text-center">
+                        <i class="bi bi-shield-fill-check icon"></i>
+                        <h5 class="card-title">Antivirus Logs</h5>
+                        <p class="counter" data-target="{{ antivirus_count }}">0</p>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="glass-card">
-                    <div class="mini-section-header">Method Types</div>
-                    <canvas id="methodChart"></canvas>
+
+            <!-- Login Logs -->
+            <div class="col-md-3">
+                <div class="card card-summary card-login" onclick="location.href='/logs/login_log_data'"
+                     data-bs-toggle="tooltip" data-bs-placement="top" title="Displays user login attempts and success status.">
+                    <div class="card-body text-center">
+                        <i class="bi bi-person-check-fill icon"></i>
+                        <h5 class="card-title">Login Logs</h5>
+                        <p class="counter" data-target="{{ login_count }}">0</p>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="glass-card">
-                    <div class="mini-section-header">IP Distribution</div>
-                    <canvas id="ipChart"></canvas>
+
+            <!-- Server Access Logs -->
+            <div class="col-md-3">
+                <div class="card card-summary card-access" onclick="location.href='/logs/server_access_logs'"
+                     data-bs-toggle="tooltip" data-bs-placement="top" title="Shows HTTP request details including IP, method, and status.">
+                    <div class="card-body text-center">
+                        <i class="bi bi-server icon"></i>
+                        <h5 class="card-title">Server Access Logs</h5>
+                        <p class="counter" data-target="{{ access_count }}">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Windows Logon Events -->
+            <div class="col-md-3">
+                <div class="card card-summary card-winlog" onclick="location.href='/logs/windows_logon_events'"
+                     data-bs-toggle="tooltip" data-bs-placement="top" title="Displays Windows system logon events and statuses.">
+                    <div class="card-body text-center">
+                        <i class="bi bi-window icon"></i>
+                        <h5 class="card-title">Windows Logon Events</h5>
+                        <p class="counter" data-target="{{ winlog_count }}">0</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script id="stats-data" type="application/json">
-        {
-            "method_counts": {{ stats.method_counts | tojson }},
-            "ip_counts": {{ stats.ip_counts | tojson }},
-            "daily_counts": {{ stats.daily_counts | tojson }}
-        }
-    </script>
+<!-- Bootstrap JS for tooltips -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        const statsData = JSON.parse(document.getElementById('stats-data').textContent);
+<!-- Counter Animation Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const counters = document.querySelectorAll('.counter');
 
-        new Chart(document.getElementById('dailyChart'), {
-            type: 'line',
-            data: {
-                labels: Object.keys(statsData.daily_counts),
-                datasets: [{
-                    label: 'Requests',
-                    data: Object.values(statsData.daily_counts),
-                    borderColor: '#6f42c1',
-                    backgroundColor: 'rgba(111, 66, 193, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } }
+    counters.forEach(counter => {
+        const updateCount = () => {
+            const target = +counter.getAttribute('data-target');
+            const count = +counter.innerText.replace(/,/g, '');
+            const increment = Math.ceil(target / 200);
+
+            if (count < target) {
+                counter.innerText = (count + increment).toLocaleString();
+                setTimeout(updateCount, 10);
+            } else {
+                counter.innerText = target.toLocaleString();
             }
-        });
+        };
+        updateCount();
+    });
 
-        new Chart(document.getElementById('methodChart'), {
-            type: 'bar',
-            data: {
-                labels: ['GET', 'POST'],
-                datasets: [{
-                    label: 'Count',
-                    data: [
-                        statsData.method_counts['GET'] || 0,
-                        statsData.method_counts['POST'] || 0
-                    ],
-                    backgroundColor: ['#20c997', '#fd7e14']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } }
-            }
-        });
-
-        new Chart(document.getElementById('ipChart'), {
-            type: 'pie',
-            data: {
-                labels: Object.keys(statsData.ip_counts),
-                datasets: [{
-                    data: Object.values(statsData.ip_counts),
-                    backgroundColor: ['#ff7675', '#74b9ff', '#55efc4', '#ffeaa7', '#a29bfe']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    </script>
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+});
+</script>
 </body>
 </html>
