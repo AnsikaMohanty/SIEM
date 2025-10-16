@@ -64,22 +64,23 @@
                     <div class="card-body text-center">
                         <i class="bi bi-server icon"></i>
                         <h5 class="card-title">Server Access Logs</h5>
-                        <p class="counter" data-target="{{ access_count }}">0</p>
+                        <p class="counter" data-target="{{ server_access_count }}">0</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Windows Logon Events -->
+            <!-- RDP Events -->
             <div class="col-md-3">
-                <div class="card card-summary card-winlog" onclick="location.href='/logs/windows_logon_events'"
-                     data-bs-toggle="tooltip" data-bs-placement="top" title="Displays Windows system logon events and statuses.">
+                <div class="card card-summary card-rdp" onclick="location.href='/logs/rdp_events'"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="Displays Remote Desktop Protocol events and statuses.">
                     <div class="card-body text-center">
                         <i class="bi bi-window icon"></i>
-                        <h5 class="card-title">Windows Logon Events</h5>
-                        <p class="counter" data-target="{{ winlog_count }}">0</p>
+                        <h5 class="card-title">RDP Events</h5>
+                        <p class="counter" data-target="{{ rdp_count }}">0</p>
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

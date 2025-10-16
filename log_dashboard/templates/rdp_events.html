@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RDP Events - SIEM Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+body { background-color: #f4f6f8; }
+h2 { color: #343a40; }
+.table-container { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);}
+.table thead { background-color: #f1f3f5; position: sticky; top:0; z-index:2;}
+.table-hover tbody tr:hover { background-color:#f8f9fa;}
+.badge-connected { background-color: #28a745; color:white; } /* Green */
+.badge-disconnected { background-color: #007bff; color:white; } /* Blue */
+.badge-failed { background-color: #dc3545; color:white; } /* Red */
+.chart-container { background: #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+.filter-section { background:#fff; padding:15px; border-radius:8px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.05);}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+<div class="container">
+<a class="navbar-brand" href="/">SIEM Dashboard</a>
+<div class="collapse navbar-collapse justify-content-end">
+<ul class="navbar-nav">
+<li class="nav-item"><a href="/logs/login_log_data" class="nav-link">Login Logs</a></li>
+<li class="nav-item"><a href="/logs/server_access_logs" class="nav-link">Server Access</a></li>
+<li class="nav-item"><a href="/logs/antivirus_logs" class="nav-link">Antivirus Logs</a></li>
+</ul>
+</div>
+</div>
+</nav>
+
+<div class="container my-5">
+<h2 class="mb-4 text-center">💻 RDP Events Summary</h2>
+
+<div class="chart-container">
+<h5 class="text-center">Status Distribution</h5>
+<canvas id="statusChart" style="max-height:400px;"></canvas>
+</div>
+
+<div class="filter-section mt-4">
+<div class="row align-items-center">
+<div class="col-md-3">
+<select class="form-select" id="statusFilter">
+<option value="">All Status</option>
+<option value="Connected">Connected</option>
+<option value="Disconnected">Disconnected</option>
+<option value="Failed">Failed</option>
+</select>
+</div>
+<div class="col-md-6">
+<input type="text" id="searchInput" class="form-control" placeholder="Search by Username or IP">
+</div>
+<div class="col-md-3 text-end">
+<button class="btn btn-success w-100" id="downloadCsv"><i class="bi bi-download"></i> Export CSV</button>
+</div>
+</div>
+</div>
+
+<div class="table-container mt-4">
+<h5>RDP Logs</h5>
+<table class="table table-hover table-bordered" id="rdpTable">
+<thead>
+<tr>
+<th>ID</th>
+<th>Session ID</th>
+<th>Username</th>
+<th>Remote Address</th>
+<th>Remote Port</th>
+<th>Status</th>
+<th>Timestamp</th>
+</tr>
+</thead>
+<tbody>
+{% for log in logs %}
+<tr>
+<td>{{ log.id }}</td>
+<td>{{ log.session_id }}</td>
+<td>{{ log.username }}</td>
+<td>{{ log.remote_address }}</td>
+<td>{{ log.remote_port }}</td>
+<td>
+<span class="badge
+{% set s = log.status|trim|lower %}
+{% if s == 'connected' %}badge-connected
+{% elif s == 'disconnected' %}badge-disconnected
+{% else %}badge-failed
+{% endif %}">
+{{ log.status }}
+</span>
+</td>
+<td>{{ log.ts }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+<div class="text-center mt-3">
+<button class="btn btn-primary" id="showMoreBtn">Show More</button>
+<button class="btn btn-secondary d-none" id="showLessBtn">Show Less</button>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ==== Status Pie Chart ====
+const statusData = {{ summary_status|tojson | default('{"labels":[],"data":[]}') }};
+const statusColorsMap = {
+    "connected": "#28a745",
+    "disconnected": "#007bff",
+    "failed": "#dc3545"
+};
+const colors = statusData.labels.map(l => statusColorsMap[l.trim().toLowerCase()] || "#6c757d");
+
+new Chart(document.getElementById('statusChart'), {
+    type: 'pie',
+    data: {
+        labels: statusData.labels,
+        datasets: [{
+            data: statusData.data,
+            backgroundColor: colors
+        }]
+    },
+    options: {
+        responsive:true,
+        plugins:{legend:{position:'bottom'}},
+        maintainAspectRatio:false
+    }
+});
+
+// ==== Show More / Show Less / Search / Filter ====
+let offset = {{ logs|length }};
+const tableBody = document.querySelector("#rdpTable tbody");
+const showMoreBtn = document.getElementById("showMoreBtn");
+const showLessBtn = document.getElementById("showLessBtn");
+const searchInput = document.getElementById("searchInput");
+const statusFilter = document.getElementById("statusFilter");
+
+function filterRow(row){
+    const statusVal = statusFilter.value.toLowerCase();
+    const searchVal = searchInput.value.toLowerCase();
+    const rowStatus = row.querySelector("td:nth-child(6)").innerText.toLowerCase();
+    const username = row.querySelector("td:nth-child(3)").innerText.toLowerCase();
+    const ip = row.querySelector("td:nth-child(4)").innerText.toLowerCase();
+    return ((statusVal && rowStatus !== statusVal) ? false : true)
+        && ((username.includes(searchVal) || ip.includes(searchVal)) ? true : searchVal=="");
+}
+
+function applyFilters(){
+    tableBody.querySelectorAll("tr").forEach(row => {
+        row.style.display = filterRow(row) ? "" : "none";
+    });
+}
+
+searchInput.addEventListener("keyup", applyFilters);
+statusFilter.addEventListener("change", applyFilters);
+
+showMoreBtn.addEventListener("click", ()=>{
+    fetch(`/logs/rdp_events/more?offset=${offset}&search=${searchInput.value}&status=${statusFilter.value}`)
+    .then(res => res.json())
+    .then(data => {
+        data.forEach(log=>{
+            const tr = document.createElement("tr");
+            const s = log.status.trim().toLowerCase();
+            let badgeClass = "badge-failed";
+            if(s=="connected") badgeClass="badge-connected";
+            else if(s=="disconnected") badgeClass="badge-disconnected";
+            tr.innerHTML=`
+                <td>${log.id}</td>
+                <td>${log.session_id}</td>
+                <td>${log.username}</td>
+                <td>${log.remote_address}</td>
+                <td>${log.remote_port}</td>
+                <td><span class="badge ${badgeClass}">${log.status}</span></td>
+                <td>${log.ts}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        offset += data.length;
+        applyFilters();
+        showLessBtn.classList.remove("d-none");
+    });
+});
+
+showLessBtn.addEventListener("click", ()=>{
+    while(tableBody.rows.length > 50) tableBody.deleteRow(50);
+    offset = tableBody.rows.length;
+    showLessBtn.classList.add("d-none");
+});
+
+// ==== Export CSV ====
+document.getElementById("downloadCsv").addEventListener("click", ()=>{
+    let csv = [];
+    tableBody.querySelectorAll("tr").forEach(row=>{
+        const cols = row.querySelectorAll("td");
+        csv.push(Array.from(cols).map(c=>`"${c.innerText}"`).join(","));
+    });
+    const blob = new Blob([csv.join("\n")], {type:"text/csv"});
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download="rdp_events.csv"; a.click();
+    window.URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>

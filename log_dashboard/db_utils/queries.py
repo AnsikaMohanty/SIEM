@@ -1,46 +1,62 @@
-from db_utils.connection import get_db_connection
+import mysql.connector
+from mysql.connector import Error
 
-def fetch_logs(table_name, limit=50):
-    """
-    Fetch last {limit} rows from given table.
-    """
-    conn = get_db_connection()
-    if not conn:
+DB_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "rootroot",
+    "database": "siem"
+}
+
+def get_connection():
+    return mysql.connector.connect(**DB_CONFIG)
+
+def fetch_logs(table_name, limit=50, offset=0, search=""):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = f"SELECT * FROM {table_name}"
+        if search:
+            # Search all text columns
+            query += " WHERE CONCAT_WS(' ', " \
+                     "id, log_timestamp, ip, username, session_id, remote_address, method, url, status, size, file_path, malware_type, severity, scan_type) " \
+                     f"LIKE '%{search}%'"
+        query += f" LIMIT {limit} OFFSET {offset}"
+        cursor.execute(query)
+        return cursor.fetchall()
+    except Error as e:
+        print(f"Error: {e}")
         return []
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT {limit}")
-    logs = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return logs
+    finally:
+        cursor.close()
+        conn.close()
+
+def fetch_summary(table_name, column_name):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = f"SELECT {column_name}, COUNT(*) as count FROM {table_name} GROUP BY {column_name}"
+        cursor.execute(query)
+        return cursor.fetchall()
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
 
 def fetch_count(table_name):
     """
-    Returns the total number of rows in a table.
+    Returns total number of rows in a table
     """
-    conn = get_db_connection()
-    if not conn:
-        return 0
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return result[0] if result else 0
-
-def fetch_chart_summary(table_name, group_by_column):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute(f"SELECT {group_by_column}, COUNT(*) as count FROM {table_name} GROUP BY {group_by_column}")
-        summary = cursor.fetchall()
-    except Exception as e:
-        print(f"Error fetching chart summary for {table_name}: {e}")
-        summary = []
-    cursor.close()
-    conn.close()
-
-    labels = [row[group_by_column] if row[group_by_column] else "Unknown" for row in summary]
-    data = [row["count"] for row in summary]
-
-    return {"labels": labels, "data": data}
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        return cursor.fetchone()[0] or 0
+    except Error as e:
+        print(f"Error fetching count from {table_name}: {e}")
+        return 0
+    finally:
+        cursor.close()
+        conn.close()

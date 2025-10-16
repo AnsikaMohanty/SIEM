@@ -1,57 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIEM Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Server Access Logs - SIEM Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+body {background:#f4f6f8;}
+h2 {color:#343a40;}
+.table-container{background:#fff;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+.table thead {background:#f1f3f5;position:sticky;top:0;z-index:2;}
+.table-hover tbody tr:hover{background:#f8f9fa;}
+.chart-container{background:#fff;padding:20px;border-radius:8px;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+.filter-section{background:#fff;padding:15px;border-radius:8px;margin-bottom:20px;box-shadow:0 2px 6px rgba(0,0,0,0.05);}
+</style>
 </head>
-
 <body>
-<div class="container my-4">
-    <h2>Server Access Logs Summary</h2>
-    <canvas id="summaryChart"></canvas>
 
-    <h2 class="mt-5">Detailed Logs</h2>
-    {% if logs %}
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            {% for key in logs[0].keys() %}
-                <th>{{ key }}</th>
-            {% endfor %}
-        </tr>
-        </thead>
-        <tbody>
-        {% for log in logs %}
-            <tr>
-                {% for val in log.values() %}
-                    <td>{{ val }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>No logs found.</p>
-    {% endif %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+<div class="container">
+<a class="navbar-brand" href="/">SIEM Dashboard</a>
+<div class="collapse navbar-collapse justify-content-end">
+<ul class="navbar-nav">
+<li class="nav-item"><a href="/logs/antivirus_logs" class="nav-link">Antivirus Logs</a></li>
+<li class="nav-item"><a href="/logs/login_log_data" class="nav-link">Login Logs</a></li>
+<li class="nav-item"><a href="/logs/rdp_events" class="nav-link">RDP Events</a></li>
+</ul>
+</div>
+</div>
+</nav>
+
+<div class="container my-5">
+<h2 class="mb-4 text-center">Server Access Logs</h2>
+
+<!-- Charts Row -->
+<div class="row">
+<div class="col-md-6 chart-container">
+<h5 class="text-center">Request Methods Distribution</h5>
+<canvas id="methodChart"></canvas>
+</div>
+<div class="col-md-6 chart-container">
+<h5 class="text-center">Status Code Distribution</h5>
+<canvas id="statusChart"></canvas>
+</div>
 </div>
 
-<script>
-    const summaryData = {
-        labels: {{ summary.labels|tojson }},
-        datasets: [{
-            label: 'Server Access Status',
-            data: {{ summary.data|tojson }},
-            backgroundColor: 'rgba(75, 192, 192, 0.6)'
-        }]
-    };
+<div class="filter-section">
+<div class="row align-items-center">
+<div class="col-md-4">
+<select id="statusFilter" class="form-select">
+<option value="">All Status</option>
+<option value="200">200</option>
+<option value="404">404</option>
+<option value="500">500</option>
+</select>
+</div>
+<div class="col-md-6">
+<input type="text" id="searchInput" class="form-control" placeholder="Search by IP or Method...">
+</div>
+<div class="col-md-2 text-end">
+<button class="btn btn-success w-100" id="downloadCsv"><i class="bi bi-download"></i> Export CSV</button>
+</div>
+</div>
+</div>
 
-    new Chart(document.getElementById('summaryChart'), {
-        type: 'doughnut',
-        data: summaryData
+<div class="table-container mt-4">
+<h5>Server Access Logs</h5>
+<table class="table table-hover table-bordered" id="accessTable">
+<thead>
+<tr>
+<th>ID</th>
+<th>Timestamp</th>
+<th>IP</th>
+<th>Method</th>
+<th>URL</th>
+<th>Status</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+{% for log in logs %}
+<tr>
+<td>{{ log.id }}</td>
+<td>{{ log.log_timestamp }}</td>
+<td>{{ log.ip }}</td>
+<td>{{ log.method }}</td>
+<td>{{ log.url[:50] }}{% if log.url|length>50 %}...{% endif %}</td>
+<td>{{ log.status }}</td>
+<td>{{ log.size }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+<div class="text-center mt-3">
+<button class="btn btn-primary" id="showMoreBtn">Show More</button>
+<button class="btn btn-secondary d-none" id="showLessBtn">Show Less</button>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ==== Charts Data ====
+const methodData = {{ method_summary|tojson }};
+const statusData = {{ status_summary|tojson }};
+
+// ---- Request Methods Bar Chart ----
+new Chart(document.getElementById('methodChart'), {
+    type: 'bar',
+    data: {
+        labels: methodData.labels,
+        datasets: [{
+            label: "Requests",
+            data: methodData.data,
+            backgroundColor: "rgba(54,162,235,0.6)"
+        }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+
+// ---- Status Code Pie Chart with Dynamic Coloring ----
+function getStatusColor(code) {
+    code = parseInt(code);
+    if (code >= 200 && code < 300) return "rgba(40,167,69,0.8)";   // Green - Success
+    if (code >= 300 && code < 400) return "rgba(54,162,235,0.8)"; // Blue - Redirect
+    if (code >= 400 && code < 500) return "rgba(255,193,7,0.9)";  // Yellow - Client Error
+    if (code >= 500 && code < 600) return "rgba(220,53,69,0.8)";  // Red - Server Error
+    return "rgba(108,117,125,0.7)"; // Gray for others
+}
+
+const statusColors = statusData.labels.map(getStatusColor);
+
+new Chart(document.getElementById('statusChart'), {
+    type: 'pie',
+    data: {
+        labels: statusData.labels,
+        datasets: [{
+            data: statusData.data,
+            backgroundColor: statusData.labels.map(label => {
+                const colorMap = {
+                    200: "rgba(40, 167, 69, 0.8)",   // green
+                    201: "rgba(75, 192, 192, 0.8)",  // teal
+                    204: "rgba(0, 123, 255, 0.8)",   // blue
+                    301: "rgba(200, 100, 64, 0.8)",  // orange
+                    302: "rgba(255, 99, 132, 0.8)",  // red-pink
+                    304: "rgba(153, 102, 255, 0.8)", // purple
+                    400: "rgba(255, 206, 86, 0.8)",  // yellow
+                    401: "rgba(255, 99, 71, 0.8)",   // tomato
+                    403: "rgba(255, 0, 0, 0.8)",     // red
+                    404: "rgba(255, 140, 0, 0.8)",   // dark orange
+                    408: "rgba(255, 215, 0, 0.8)",   // gold
+                    430: "rgba(255, 182, 193, 0.8)", // light pink
+                    499: "rgba(139, 0, 139, 0.8)",   // dark magenta
+                    500: "rgba(220, 53, 69, 0.8)",   // crimson
+                    502: "rgba(128, 0, 0, 0.8)",     // maroon
+                    503: "rgba(255, 20, 147, 0.8)",  // deep pink
+                    504: "rgba(0, 0, 128, 0.8)"      // navy
+                };
+                return colorMap[label] || "rgba(108, 117, 125, 0.8)"; // fallback grey
+            })
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                    label: ctx => `${ctx.label}: ${ctx.parsed}`
+                }
+            }
+        }
+    }
+});
+
+
+// ==== Table Filters & Show More/Less ====
+let offset = {{ logs|length }};
+const showMoreBtn = document.getElementById("showMoreBtn");
+const showLessBtn = document.getElementById("showLessBtn");
+const tableBody = document.querySelector("#accessTable tbody");
+const searchInput = document.getElementById("searchInput");
+const statusFilter = document.getElementById("statusFilter");
+
+function filterRow(row) {
+    const statusVal = statusFilter.value;
+    const searchVal = searchInput.value.toLowerCase();
+    const statusText = row.cells[5].innerText;
+    const ip = row.cells[2].innerText.toLowerCase();
+    const method = row.cells[3].innerText.toLowerCase();
+    return ((statusVal && statusText !== statusVal) ? false : true) &&
+           ((ip.includes(searchVal) || method.includes(searchVal)) ? true : searchVal === "");
+}
+
+function applyFilters() {
+    document.querySelectorAll("#accessTable tbody tr").forEach(row => {
+        row.style.display = filterRow(row) ? "" : "none";
     });
+}
+
+statusFilter.addEventListener("change", applyFilters);
+searchInput.addEventListener("keyup", applyFilters);
+
+showMoreBtn.addEventListener("click", () => {
+    fetch(`/logs/server_access_logs/more?offset=${offset}&search=${searchInput.value}`)
+    .then(res => res.json())
+    .then(data => {
+        data.forEach(log => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${log.id}</td>
+                <td>${log.log_timestamp}</td>
+                <td>${log.ip}</td>
+                <td>${log.method}</td>
+                <td>${log.url}</td>
+                <td>${log.status}</td>
+                <td>${log.size}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        offset += data.length;
+        applyFilters();
+        showLessBtn.classList.remove("d-none");
+    });
+});
+
+showLessBtn.addEventListener("click", () => {
+    while (tableBody.rows.length > 50) {
+        tableBody.deleteRow(50);
+    }
+    offset = tableBody.rows.length;
+    showLessBtn.classList.add("d-none");
+});
+
+document.getElementById("downloadCsv").addEventListener("click", () => {
+    let csv = [];
+    document.querySelectorAll("#accessTable tr").forEach(row => {
+        const cols = row.querySelectorAll("td,th");
+        csv.push(Array.from(cols).map(c => `"${c.innerText}"`).join(","));
+    });
+    const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "server_access_logs.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+});
 </script>
 </body>
 </html>
