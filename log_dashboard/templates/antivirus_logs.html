@@ -13,10 +13,10 @@ h2 { color: #343a40; }
 .table-container { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);}
 .table thead { background-color: #f1f3f5; position: sticky; top:0; z-index:2;}
 .table-hover tbody tr:hover { background-color:#f8f9fa;}
-.badge-critical { background-color: #8B0000; color:white; } /* Dark Red */
-.badge-high { background-color: #FF0000; color:white; }      /* Red */
-.badge-medium { background-color: #FFD700; color:black; }    /* Yellow */
-.badge-low { background-color: #28a745; color:white; }       /* Green */
+.badge-critical { background-color: #8B0000; color:white; }
+.badge-high { background-color: #FF0000; color:white; }
+.badge-medium { background-color: #FFD700; color:black; }
+.badge-low { background-color: #28a745; color:white; }
 .chart-container { background: #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow:0 4px 12px rgba(0,0,0,0.05);}
 .filter-section { background:#fff; padding:15px; border-radius:8px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.05);}
 </style>
@@ -35,6 +35,15 @@ h2 { color: #343a40; }
 </div>
 </div>
 </nav>
+
+<!-- 🔹 New Section: View ML Insights Button -->
+<div class="container mt-3">
+  <div class="d-flex justify-content-end">
+    <a href="{{ url_for('ml_insights.antivirus') }}" class="btn btn-outline-primary">
+      <i class="bi bi-bar-chart"></i> View ML Insights
+    </a>
+  </div>
+</div>
 
 <div class="container my-5">
 <h2 class="mb-4 text-center">🛡️ Antivirus Logs Summary</h2>
@@ -109,43 +118,31 @@ h2 { color: #343a40; }
 const severityData = {{ severity_summary|tojson | default('{"labels":[],"data":[]}') }};
 const malwareData = {{ malware_summary|tojson | default('{"labels":[],"data":[]}') }};
 
-// ==== Severity Chart with correct colors ====
+// ==== Severity Chart Colors ====
 const severityColorsMap = {
-    "Critical": "#8B0000", // Dark Red
-    "High": "#FF0000",     // Red
-    "Medium": "#FFD700",   // Yellow
-    "Low": "#28a745"       // Green
+    "Critical": "#8B0000",
+    "High": "#FF0000",
+    "Medium": "#FFD700",
+    "Low": "#28a745"
 };
-
-const severityColors = severityData.labels.map(label => severityColorsMap[label] || "#6c757d"); // fallback gray
+const severityColors = severityData.labels.map(label => severityColorsMap[label] || "#6c757d");
 
 new Chart(document.getElementById('severityChart'), {
     type: 'pie',
     data: {
         labels: severityData.labels,
-        datasets: [{
-            data: severityData.data,
-            backgroundColor: severityColors
-        }]
+        datasets: [{ data: severityData.data, backgroundColor: severityColors }]
     },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { position: 'bottom' }
-        }
-    }
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
 });
 
 new Chart(document.getElementById('malwareChart'), {
     type: 'bar',
-    data: {
-        labels: malwareData.labels,
-        datasets: [{ label: "Count", data: malwareData.data, backgroundColor: "rgba(54,162,235,0.6)" }]
-    },
+    data: { labels: malwareData.labels, datasets: [{ label: "Count", data: malwareData.data, backgroundColor: "rgba(54,162,235,0.6)" }] },
     options: { responsive: true, scales: { y: { beginAtZero: true } } }
 });
 
-// ==== Show More / Search / Filter ====
+// ==== Filter & Search ====
 let offset = {{ logs|length }};
 const tableBody = document.querySelector("#antivirusTable tbody");
 const showMoreBtn = document.getElementById("showMoreBtn");
@@ -159,7 +156,6 @@ function filterRow(row){
     const rowSeverity = row.querySelector("td:nth-child(5)").innerText.toLowerCase();
     const filePath = row.querySelector("td:nth-child(3)").innerText.toLowerCase();
     const malware = row.querySelector("td:nth-child(4)").innerText.toLowerCase();
-
     return ((severityVal && rowSeverity !== severityVal) ? false : true)
            && ((filePath.includes(searchVal) || malware.includes(searchVal)) ? true : searchVal=="");
 }
@@ -173,6 +169,7 @@ function applyFilters(){
 searchInput.addEventListener("keyup", applyFilters);
 severityFilter.addEventListener("change", applyFilters);
 
+// ==== Show More / Less ====
 showMoreBtn.addEventListener("click", ()=>{
     fetch(`/logs/antivirus_logs/more?offset=${offset}&search=${searchInput.value}&severity=${severityFilter.value}`)
     .then(res=>res.json())
@@ -204,7 +201,7 @@ showLessBtn.addEventListener("click", ()=>{
     showLessBtn.classList.add("d-none");
 });
 
-// Export CSV
+// ==== Export CSV ====
 document.getElementById("downloadCsv").addEventListener("click",()=>{
     let csv = [];
     tableBody.querySelectorAll("tr").forEach(row=>{

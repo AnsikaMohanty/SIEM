@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antivirus ML Insights</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark shadow">
+<div class="container">
+  <a href="/" class="navbar-brand">SIEM Dashboard</a>
+  <a href="{{ url_for('logs.antivirus_logs') }}" class="btn btn-outline-light ms-auto">
+    <i class="bi bi-arrow-left"></i> Back to Logs
+  </a>
+</div>
+</nav>
+
+<div class="container my-5">
+<h2 class="mb-4 text-center">📊 Antivirus ML Insights</h2>
+
+<!-- Anomaly Detection -->
+<div class="card mb-4">
+<div class="card-body">
+<h5>Anomaly Detection</h5>
+<p>Counts: {{ anomaly.counts }}</p>
+<table class="table table-bordered table-hover">
+<thead>
+<tr>{% for col in anomaly.sample[0].keys() %}<th>{{ col }}</th>{% endfor %}</tr>
+</thead>
+<tbody>
+{% for row in anomaly.sample %}
+<tr>{% for val in row.values() %}<td>{{ val }}</td>{% endfor %}</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Malware Type Prediction -->
+<div class="card mb-4">
+<div class="card-body">
+<h5>Malware Type Prediction</h5>
+<table class="table table-bordered">
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+{% for metric, val in malware.metrics.items() %}
+<tr><td>{{ metric }}</td><td>
+{% if val is mapping %}
+{% for k,v in val.items() %}
+{{ k }}: {{ "%.2f"|format(v*100) }}%<br>
+{% endfor %}
+{% else %}
+{{ "%.2f"|format(val*100) }}%
+{% endif %}
+</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Severity Prediction -->
+<div class="card mb-4">
+<div class="card-body">
+<h5>Severity Prediction</h5>
+<table class="table table-bordered">
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+{% for metric, val in severity.metrics.items() %}
+<tr><td>{{ metric }}</td><td>
+{% if val is mapping %}
+{% for k,v in val.items() %}
+{{ k }}: {{ "%.2f"|format(v*100) }}%<br>
+{% endfor %}
+{% else %}
+{{ "%.2f"|format(val*100) }}%
+{% endif %}
+</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Plots -->
+<div class="container mt-4">
+<h4>Plots</h4>
+<div class="row">
+{% for img in anomaly.images %}
+<div class="col-md-6 mb-3">
+<img src="{{ url_for('static', filename='antivirus_outputs/' + img) }}" class="img-fluid border rounded shadow">
+<p class="text-center">{{ img.replace('_', ' ').replace('.png','') }}</p>
+</div>
+{% endfor %}
+{% for img in malware.images %}
+<div class="col-md-6 mb-3">
+<img src="{{ url_for('static', filename='antivirus_outputs/' + img) }}" class="img-fluid border rounded shadow">
+<p class="text-center">{{ img.replace('_', ' ').replace('.png','') }}</p>
+</div>
+{% endfor %}
+{% for img in severity.images %}
+<div class="col-md-6 mb-3">
+<img src="{{ url_for('static', filename='antivirus_outputs/' + img) }}" class="img-fluid border rounded shadow">
+<p class="text-center">{{ img.replace('_', ' ').replace('.png','') }}</p>
+</div>
+{% endfor %}
+</div>
+</div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
