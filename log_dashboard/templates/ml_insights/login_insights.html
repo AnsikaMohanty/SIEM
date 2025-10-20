@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login ML Insights</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+  body {
+    background-color: #f8f9fa;
+  }
+  .card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .metric {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+  .metric i {
+    margin-right: 6px;
+  }
+  .muted {
+    color: #888;
+  }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark shadow">
+  <div class="container">
+    <a href="/" class="navbar-brand">SIEM Dashboard</a>
+    <a href="{{ url_for('logs.login_logs') }}" class="btn btn-outline-light ms-auto">
+      <i class="bi bi-arrow-left"></i> Back to Logs
+    </a>
+  </div>
+</nav>
+
+<div class="container my-5">
+  <h2 class="mb-4 text-center">🔐 Login Logs ML Insights</h2>
+
+  <!-- Anomaly Detection -->
+  <div class="card mb-4 border-success">
+    <div class="card-body">
+      <h5 class="text-success"><i class="bi bi-exclamation-triangle"></i> Anomaly Detection</h5>
+      {% if results.anomalies %}
+        <p class="metric text-dark">Detected <strong>{{ results.anomalies }}</strong> anomalies from recent login data.</p>
+      {% else %}
+        <p class="muted">No anomalies detected or insufficient data.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Classification -->
+  <div class="card mb-4 border-primary">
+    <div class="card-body">
+      <h5 class="text-primary"><i class="bi bi-robot"></i> Binary Classification</h5>
+      {% if results.classification %}
+        <pre class="bg-light p-3 rounded small">{{ results.classification.report }}</pre>
+        <img src="{{ url_for('static', filename='login_outputs/' + results.classification.matrix) }}" 
+             class="img-fluid border rounded shadow mt-2">
+      {% else %}
+        <p class="muted">Classification skipped (no anomalies or not enough samples).</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Clustering -->
+  <div class="card mb-4 border-warning">
+    <div class="card-body">
+      <h5 class="text-warning"><i class="bi bi-diagram-3"></i> Clustering</h5>
+      {% if results.clustering %}
+        <p class="metric">Total Clusters Formed: <strong>{{ results.clustering.clusters }}</strong></p>
+        <img src="{{ url_for('static', filename='login_outputs/' + results.clustering.plot) }}" 
+             class="img-fluid border rounded shadow mt-2">
+      {% else %}
+        <p class="muted">Clustering not performed due to limited or missing data.</p>
+      {% endif %}
+    </div>
+  </div>
+
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
