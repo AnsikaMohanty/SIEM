@@ -52,3 +52,46 @@ def login_insights():
         return f"⚠️ CSV file not found: {e.filename}"
 
     return render_template("ml_insights/login_insights.html", results=results, images=images)
+
+# ====== Server Access Logs Insights ======
+@ml_insights_bp.route('/server_access')
+def server_access_insights():
+    from ml_models.server_access_ml.anomaly_detection import detect_anomalies, load_data_from_mysql, feature_engineering
+    from ml_models.server_access_ml.bot_classification import load_data, label_data, feature_engineering as bot_features, train_classifier
+    from ml_models.server_access_ml.status_pattern_analysis import analyze_status_patterns
+    import pandas as pd
+
+    results = {"anomaly": None, "bot": None, "status_pattern": None}
+
+    try:
+        # 1️⃣ Anomaly Detection
+        df_logs = load_data_from_mysql()
+        features = feature_engineering(df_logs)
+        anomalies = detect_anomalies(features)
+
+        anomaly_sample = anomalies.head(10).to_dict(orient="records")  # ✅ Works now
+        results["anomaly"] = {
+            "summary": f"{len(anomalies)} anomalous IPs detected.",
+            "sample": anomaly_sample,
+            "plot": "anomaly_detection_plot.png"
+        }
+
+
+        # 2️⃣ Bot Classification
+        df_bots = load_data()
+        df_bots = label_data(df_bots)
+        bot_df = bot_features(df_bots)
+        model = train_classifier(bot_df)
+        results["bot"] = {
+            "metrics": model.get("metrics", {}),
+            "plot": model.get("plot", None)
+        }
+
+        # 3️⃣ Status Pattern Detection
+        status_results = analyze_status_patterns()
+        results["status_pattern"] = status_results
+
+    except Exception as e:
+        return f"⚠️ Error while analyzing Server Access Logs: {e}"
+
+    return render_template("ml_insights/server_access_insights.html", results=results)

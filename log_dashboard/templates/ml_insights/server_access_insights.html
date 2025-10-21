@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Server Access ML Insights</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+  body { background-color: #f8f9fa; }
+  .card { border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .metric { font-size: 1.1rem; font-weight: 500; }
+  .muted { color: #888; }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark shadow">
+  <div class="container">
+    <a href="/" class="navbar-brand">SIEM Dashboard</a>
+    <a href="{{ url_for('logs.server_access_logs') }}" class="btn btn-outline-light ms-auto">
+      <i class="bi bi-arrow-left"></i> Back to Logs
+    </a>
+  </div>
+</nav>
+
+<div class="container my-5">
+  <h2 class="mb-4 text-center">🌐 Server Access Logs ML Insights</h2>
+
+  <!-- 🧩 Anomaly Detection -->
+  <div class="card mb-4 border-danger">
+    <div class="card-body">
+      <h5 class="text-danger"><i class="bi bi-bug"></i> Anomaly Detection</h5>
+      {% if results.anomaly %}
+        <p class="metric text-dark">{{ results.anomaly.summary }}</p>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover small">
+            <thead class="table-light">
+              <tr>
+                {% for col in results.anomaly.sample[0].keys() %}
+                <th>{{ col }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in results.anomaly.sample %}
+              <tr>
+                {% for val in row.values() %}
+                <td>{{ val }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted">No anomalies detected or insufficient data.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 🤖 Bot Classification -->
+  <div class="card mb-4 border-primary">
+    <div class="card-body">
+      <h5 class="text-primary"><i class="bi bi-robot"></i> Bot Classification</h5>
+      {% if results.bot and results.bot.metrics %}
+        <div class="table-responsive">
+          <table class="table table-bordered small">
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody>
+              {% for metric, val in results.bot.metrics.items() %}
+              <tr>
+                <td>{{ metric }}</td>
+                <td>
+                  {% if val is mapping %}
+                    {% for k,v in val.items() %}
+                      {{ k }}: {{ "%.2f"|format(v*100) }}%<br>
+                    {% endfor %}
+                  {% else %}
+                    {{ "%.2f"|format(val*100) }}%
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if results.bot.plot %}
+          <img src="{{ url_for('static', filename='server_outputs/' + results.bot.plot) }}" class="img-fluid border rounded shadow mt-2">
+        {% endif %}
+      {% else %}
+        <p class="muted">No classification metrics available or insufficient data.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 🧾 Status Pattern Detection -->
+<div class="card mb-4 border-success">
+  <div class="card-body">
+    <h5 class="text-success"><i class="bi bi-bar-chart-line"></i> Status Pattern Detection</h5>
+    {% if results.status_pattern %}
+      <p class="metric">{{ results.status_pattern.summary }}</p>
+
+      <h6 class="mt-3">📊 Summary Metrics</h6>
+      <ul>
+        {% for k, v in results.status_pattern.metrics.items() %}
+        <li><strong>{{ k }}:</strong> {{ v }}</li>
+        {% endfor %}
+      </ul>
+
+      {% if results.status_pattern.top_ips %}
+      <h6 class="mt-3">🚨 Top 5 Problematic IPs</h6>
+      <div class="table-responsive">
+        <table class="table table-bordered small">
+          <thead class="table-light">
+            <tr>
+              {% for col in results.status_pattern.top_ips[0].keys() %}
+              <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in results.status_pattern.top_ips %}
+            <tr>
+              {% for val in row.values() %}
+              <td>{{ val }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      {% if results.status_pattern.plot %}
+      <img src="{{ url_for('static', filename='server_outputs/' + results.status_pattern.plot) }}" 
+           class="img-fluid border rounded shadow mt-3">
+      {% endif %}
+    {% else %}
+      <p class="muted">No status pattern insights available.</p>
+    {% endif %}
+  </div>
+</div>
+
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
