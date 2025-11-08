@@ -2,9 +2,17 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
+import os
 
 # Load the dataset
-df = pd.read_csv("loginlogoffff.csv")
+# Get the directory where the current script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Build the path to the CSV file relative to the script location
+csv_path = os.path.join(script_dir, "loginlogoffff.csv")
+
+# Read the CSV
+df = pd.read_csv(csv_path)
 
 # Data preprocessing
 df['Login Timestamp'] = pd.to_datetime(df['Login Timestamp'])

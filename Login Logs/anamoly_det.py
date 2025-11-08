@@ -3,9 +3,17 @@ import mysql.connector
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
+import os
 
 # ====== Load CSV ======
-df = pd.read_csv("loginlogoffff.csv")
+# Get the directory where the current script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Build the path to the CSV file relative to the script location
+csv_path = os.path.join(script_dir, "loginlogoffff.csv")
+
+# Read the CSV
+df = pd.read_csv(csv_path)
 
 # Standardize column names
 df.columns = [col.strip().replace(" ", "_") for col in df.columns]

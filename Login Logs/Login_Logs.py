@@ -84,6 +84,11 @@ def insert_csv_to_db(csv_path):
             conn.close()
 
 if __name__ == "__main__":
-    csv_file_path = r"C:\Users\MY PC\Desktop\SIEM\SIEM\Login Logs\loginlogoffff.csv"
+    #csv_file_path = r"C:\Users\MY PC\Desktop\SIEM\SIEM\Login Logs\loginlogoffff.csv"
+    # Get the directory of the current Python file
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Build the path to the CSV file (in the same folder)
+    csv_file_path = os.path.join(base_dir, "loginlogoffff.csv")
     create_database_and_table()
     insert_csv_to_db(csv_file_path)
