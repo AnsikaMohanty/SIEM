@@ -61,8 +61,11 @@ def detect_anomalies(features):
 
     # Plot: Request Count vs Error Ratio
     plt.figure(figsize=(6,4))
+   # Invert the color mapping so anomalies (-1) show as red
+    colors = features['anomaly'].map({-1: 'red', 1: 'blue'})
     plt.scatter(features['request_count'], features['error_ratio'],
-                c=features['anomaly'], cmap='coolwarm', s=50)
+            c=colors, s=50)
+
     plt.xlabel("Request Count")
     plt.ylabel("Error Ratio")
     plt.title("Anomaly Detection: IP Activity")

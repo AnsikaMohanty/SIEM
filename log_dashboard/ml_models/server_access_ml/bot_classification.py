@@ -70,12 +70,18 @@ def train_classifier(features):
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
 
+    # Get classification report and remove 'support'
     report = classification_report(y_test, y_pred, output_dict=True)
+    for key in report.keys():
+        if isinstance(report[key], dict) and "support" in report[key]:
+            del report[key]["support"]
+
     cm = confusion_matrix(y_test, y_pred)
 
     # Plot confusion matrix
     plt.figure(figsize=(4, 3))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Human', 'Bot'], yticklabels=['Human', 'Bot'])
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=['Human', 'Bot'], yticklabels=['Human', 'Bot'])
     plt.title('Bot vs Human Classification')
     plt.xlabel('Predicted')
     plt.ylabel('Actual')

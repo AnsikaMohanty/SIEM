@@ -54,8 +54,7 @@ def analyze_status_patterns():
     # Summary metrics
     summary = {
         "Total Unique IPs": len(df['ip'].unique()),
-        "Average Error Rate": f"{agg['error_rate'].mean() * 100:.2f}%",
-        "Most Problematic IP": top_ips.iloc[0]['ip'] if not top_ips.empty else "N/A"
+        "Average Error Rate": f"{agg['error_rate'].mean() * 100:.2f}%"
     }
 
     # Visualization
@@ -71,7 +70,7 @@ def analyze_status_patterns():
     plt.close()
 
     return {
-        "summary": f"✅ Status pattern analysis complete. {summary['Total Unique IPs']} IPs analyzed.",
+        "summary": f"✅ {summary['Total Unique IPs']} IPs analyzed.",
         "plot": 'status_pattern_analysis.png',
         "metrics": summary,
         "top_ips": top_ips.head(5).to_dict(orient="records")

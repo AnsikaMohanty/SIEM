@@ -28,37 +28,54 @@
 <div class="container my-5">
   <h2 class="mb-4 text-center">🌐 Server Access Logs ML Insights</h2>
 
-  <!-- 🧩 Anomaly Detection -->
   <div class="card mb-4 border-danger">
-    <div class="card-body">
-      <h5 class="text-danger"><i class="bi bi-bug"></i> Anomaly Detection</h5>
-      {% if results.anomaly %}
-        <p class="metric text-dark">{{ results.anomaly.summary }}</p>
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover small">
-            <thead class="table-light">
-              <tr>
-                {% for col in results.anomaly.sample[0].keys() %}
-                <th>{{ col }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in results.anomaly.sample %}
-              <tr>
-                {% for val in row.values() %}
-                <td>{{ val }}</td>
-                {% endfor %}
-              </tr>
+  <div class="card-body">
+    <h5 class="text-danger">
+      <i class="bi bi-bug"></i> Anomaly Detection
+    </h5>
+
+    {% if results.anomaly %}
+      <p class="metric text-dark">{{ results.anomaly.summary }}</p>
+
+      <div class="table-responsive mb-4">
+        <table class="table table-bordered table-hover small">
+          <thead class="table-light">
+            <tr>
+              {% for col in results.anomaly.sample[0].keys() %}
+              <th>{{ col }}</th>
               {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <p class="muted">No anomalies detected or insufficient data.</p>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in results.anomaly.sample %}
+            <tr>
+              {% for val in row.values() %}
+              <td>{{ val }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ✅ Plot displayed AFTER table -->
+      {% if results.anomaly.plot %}
+      <div class="text-center">
+        <h6 class="text-muted mb-2">Visual Representation:</h6>
+        <img src="{{ url_for('static', filename='server_outputs/' + results.anomaly.plot) }}?v={{ range(1, 10000) | random }}"
+             alt="Anomaly Detection Plot"
+             class="img-fluid rounded shadow-sm border border-secondary"
+             style="max-width: 90%; height: auto;">
+      </div>
       {% endif %}
-    </div>
+      <!-- ✅ End of plot section -->
+
+    {% else %}
+      <p class="muted">No anomalies detected or insufficient data.</p>
+    {% endif %}
   </div>
+</div>
+
 
   <!-- 🤖 Bot Classification -->
   <div class="card mb-4 border-primary">
